@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:emoji_picker_flutter/src/category_emoji.dart';
@@ -8,9 +7,11 @@ import 'package:emoji_picker_flutter/src/default_emoji_picker_view.dart';
 import 'package:emoji_picker_flutter/src/emoji.dart';
 import 'package:emoji_picker_flutter/src/emoji_view_state.dart';
 import 'package:emoji_picker_flutter/src/recent_emoji.dart';
+import 'package:emoji_picker_flutter/src/unsupported_emoji.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:universal_platform/universal_platform.dart';
 import 'emoji_lists.dart' as emojiList;
 
 /// All the possible categories that [Emoji] can be put into
@@ -173,7 +174,8 @@ class _EmojiPickerState extends State<EmojiPicker> {
   // Check if emoji is available on current platform
   Future<Map<String, String>?> _getPlatformAvailableEmoji(
       Map<String, String> emoji) async {
-    if (Platform.isAndroid) {
+    // Platform Android
+    if (UniversalPlatform.isAndroid) {
       Map<String, String>? filtered;
       String delimiter = "|";
       try {
@@ -192,7 +194,29 @@ class _EmojiPickerState extends State<EmojiPicker> {
         filtered = null;
       }
       return filtered;
-    } else {
+    }
+    // Plattform Web
+    else if (UniversalPlatform.isWeb) {
+      Map<String, String>? filtered = Map();
+      emoji.forEach((key, value) {
+        if (key.contains("smiling")) {
+          print(key.toLowerCase());
+        }
+        if (unsupportedWebEmoji.indexWhere((e) {
+              //if (e.toLowerCase() == "smiling face with tear") {
+              //  print("--" + e.toLowerCase());
+              //}
+
+              return e == value;
+            }) ==
+            -1) {
+          filtered.putIfAbsent(key, () => value);
+        }
+      });
+      return filtered.length > 0 ? filtered : null;
+    }
+    // Other platforms
+    else {
       return emoji;
     }
   }
